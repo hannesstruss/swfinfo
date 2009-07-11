@@ -3,16 +3,26 @@
 from __future__ import with_statement
 
 import math
+import zlib
 
 def analyze(path):
 	result = {}
 	with open(path, "rb") as file_obj:
 		buffer = file_obj.read(8)
-		result["Compressed"] = "yes" if buffer[0] == "C" else "no"
+		
+		compressed = buffer[0] == "C"
+		
+		result["Compressed"] = "yes" if compressed else "no"
 		result["Version"] = ord(buffer[3])
 		result["Uncompressed Size"] = parse_int(buffer[4:8])
-
-		result["Stage Dimensions"] = parse_rect(file_obj, 0xb)
+		
+		compressed_content = file_obj.read()
+		
+		result["Compressed Size"] = len(compressed_content) + 8
+		
+		uncompressed_content = zlib.decompress(compressed_content)
+		
+		result["Stage Dimensions"] = parse_rect(file_obj, 8)
 		
 		return result
 
@@ -46,7 +56,7 @@ def parse_rect(file_obj, index):
 	
 #
 # !.......!.......!.......!.......
-#  #######################
+#                         #######################
 #
 #
 
@@ -55,10 +65,18 @@ def parse_SB(bytes, nbits, offset):
 	"""
 	parse a signed BitValue
 	@param bytes: the string containing the bitvalue
-	@param nbits: the bitlength of the bitvalue
+	@param nbits: the length of the bitvalue in bits
 	@param offset: the offset of the bitvalue in the first byte
 	"""
-	print len(bytes), nbits, offset
+	
+	result = 0
+	padding_left = 8 - offset
+	
+	result = result | ord(bytes[0]) << (nbits - padding_left)
+	return result
+	
+		
+		
 	
 
 def parse_int(bytes, little_endian=True):

@@ -22,25 +22,24 @@ def analyze(path):
 		
 		uncompressed_content = zlib.decompress(compressed_content)
 		
-		result["Stage Dimensions"] = parse_rect(file_obj, 8)
+		result["Stage Dimensions"] = parse_rect(uncompressed_content, 0)
 		
 		return result
 
-def parse_rect(file_obj, index):
+def parse_rect(bytes, index):
 	"""
 	parses a RECT structure.
-	@param file_obj: a file object that supports seek
+	@param bytes: the bytes to parse the RECT from
 	@param index: the index of the nbits of the RECT
 	@return: a tuple, (width, height) 
 	"""
 	result = []
 
-	file_obj.seek(index)
-	nbits = ord(file_obj.read(1)) >> 3
+	nbits = ord(bytes[index]) >> 3
+	print "nbits", nbits
 	rect_len = int(math.ceil((nbits * 4 + 5) / 8.0)) # number of bytes the rect needs, including nbits
 	
-	file_obj.seek(index)
-	buffer = file_obj.read(rect_len)
+	buffer = bytes[index:][:rect_len]
 	offset = 5
 	for n in xrange(4): # read 4 bitvalues
 		first_byte = offset / 8
@@ -72,7 +71,6 @@ def parse_SB(bytes, nbits, offset):
 	result = 0
 	padding_left = 8 - offset
 	
-	result = result | ord(bytes[0]) << (nbits - padding_left)
 	return result
 	
 		

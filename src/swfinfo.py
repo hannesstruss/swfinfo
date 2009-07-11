@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # This file is part of SWFInfo.
@@ -19,6 +20,7 @@
 
 from __future__ import with_statement
 
+import sys
 import math
 import zlib
 
@@ -119,7 +121,11 @@ def parse_int(bytes, little_endian=True):
 	
 
 if __name__ == '__main__':
-	path = "/home/hannes/Desktop/FUUU.swf"
+	try:
+		path = sys.argv[1]
+	except IndexError:
+		sys.stderr.write("You must specify a path!\nUsage: ./swfinfo.py /path/to/file.swf\n")
+		sys.exit(1)
 	result = analyze(path)
 	print "SWFInfo 0.1, Hannes Struß <x@hannesstruss.de>"
 	print path

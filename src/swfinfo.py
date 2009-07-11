@@ -19,7 +19,7 @@ def analyze(path):
 		result["Version"] = ord(buffer[3])
 		result["Uncompressed Size"] = parse_int(buffer[4:8])
 		result["Compressed Size"] = len(compressed_content) + 8
-		result["Stage Dimensions"] = parse_rect(uncompressed_content, 0)
+		result["Stage Dimensions"] = map(lambda x: x/20.0, parse_rect(uncompressed_content, 0)[1::2])
 		
 		return result
 
@@ -47,7 +47,7 @@ def parse_rect(bytes, index):
 		
 		offset += nbits
 	
-	print "pix", map(lambda x: x/20.0, result)
+	print "pix", map(lambda x: x, result)
 	
 	return tuple(result)
 	
@@ -73,32 +73,30 @@ def parse_SB(bytes, nbits, offset):
 	result = 0
 	
 	total_bytes = len(bytes)
+	padding_right = total_bytes*8 - nbits - offset
 	
 	# first byte, may be only partly significant
 	byte = ord(bytes[0])
 	mask = (1 << (8 - offset)) - 1
-	bits = (byte & mask) << (nbits - offset)
-	
+	bits = (byte & mask) << (nbits - (8 - offset))
+	print "bits", bin(bits).rjust(20)
 	result |= bits
 	
 	# bytes in the middle
-	for index, byte in enumerate(map(ord, bytes[1:-1])):
-		bits = byte << (nbits - (8 * (index+1)) - offset)
+	for x, byte in enumerate(map(ord, bytes[1:-1])):
+		#bits = byte << (nbits - (8 * (x+1)) - offset)
+		bits = byte << (x+1)*8 - padding_right 
+		print "bit2", bin(bits).rjust(20)
 		result |= bits
 	
 	# last byte, may be only partly significant
 	byte = ord(bytes[-1])
-	padding_right = total_bytes*8 - nbits - offset
 	bits = byte >> padding_right
-	
 	result |= bits 
-	
-	return result
-	
-		
-		
-	
 
+	print "rslt",bin(result).rjust(20)
+	return result
+		
 def parse_int(bytes, little_endian=True):
 	"""byte string to unsigned int"""
 	if not little_endian:

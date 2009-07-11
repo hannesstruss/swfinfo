@@ -12,16 +12,13 @@ def analyze(path):
 		
 		compressed = buffer[0] == "C"
 		
+		compressed_content = file_obj.read()
+		uncompressed_content = zlib.decompress(compressed_content)
+
 		result["Compressed"] = "yes" if compressed else "no"
 		result["Version"] = ord(buffer[3])
 		result["Uncompressed Size"] = parse_int(buffer[4:8])
-		
-		compressed_content = file_obj.read()
-		
 		result["Compressed Size"] = len(compressed_content) + 8
-		
-		uncompressed_content = zlib.decompress(compressed_content)
-		
 		result["Stage Dimensions"] = parse_rect(uncompressed_content, 0)
 		
 		return result
@@ -50,13 +47,19 @@ def parse_rect(bytes, index):
 		
 		offset += nbits
 	
+	print "pix", map(lambda x: x/20.0, result)
+	
 	return tuple(result)
 	
 #
 # !.......!.......!.......!.......
 #                         #######################
 #
+# NNNNN...
+# 00000111
 #
+# ...NNNNN
+# 11100000
 
 	
 def parse_SB(bytes, nbits, offset):
@@ -68,7 +71,27 @@ def parse_SB(bytes, nbits, offset):
 	"""
 	
 	result = 0
-	padding_left = 8 - offset
+	
+	total_bytes = len(bytes)
+	
+	# first byte, may be only partly significant
+	byte = ord(bytes[0])
+	mask = (1 << (8 - offset)) - 1
+	bits = (byte & mask) << (nbits - offset)
+	
+	result |= bits
+	
+	# bytes in the middle
+	for index, byte in enumerate(map(ord, bytes[1:-1])):
+		bits = byte << (nbits - (8 * (index+1)) - offset)
+		result |= bits
+	
+	# last byte, may be only partly significant
+	byte = ord(bytes[-1])
+	padding_right = total_bytes*8 - nbits - offset
+	bits = byte >> padding_right
+	
+	result |= bits 
 	
 	return result
 	

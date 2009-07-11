@@ -1,14 +1,25 @@
 # -*- coding: utf-8 -*-
 
-def analyze(file_obj):
+from __future__ import with_statement
+
+def analyze(path):
 	result = {}
-	headers = file_obj.read(100)
-	
-	result["Compressed"] = "yes" if headers[0] == "C" else "no"
-	result["Version"] = ord(headers[3])
-	result["Uncompressed Size"] = parse_int(headers[4:8])
-	
-	return result
+	with open(path, "rb") as file_obj:
+		headers = file_obj.read(100)
+		
+		result["Compressed"] = "yes" if headers[0] == "C" else "no"
+		result["Version"] = ord(headers[3])
+		result["Uncompressed Size"] = parse_int(headers[4:8])
+		result["Stage Dimensions"] = parse_rect(headers[0xb:])
+		
+		return result
+
+def parse_rect(bytes):
+	"""
+	parses a RECT structure. bytes must be long enough 
+	"""
+	nbits = ord(bytes[0]) >> 3
+	print nbits
 
 def parse_int(bytes, little_endian=True):
 	"""byte string to unsigned int"""
@@ -25,4 +36,4 @@ def parse_int(bytes, little_endian=True):
 	
 
 if __name__ == '__main__':
-	print analyze(open("/home/hannes/Desktop/FUUU.swf"))
+	print analyze("/home/hannes/Desktop/FUUU.swf")

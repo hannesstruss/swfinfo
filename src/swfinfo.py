@@ -39,13 +39,12 @@ def parse_rect(bytes, index):
 	print "nbits", nbits
 	rect_len = int(math.ceil((nbits * 4 + 5) / 8.0)) # number of bytes the rect needs, including nbits
 	
-	buffer = bytes[index:][:rect_len]
 	offset = 5
 	for n in xrange(4): # read 4 bitvalues
-		first_byte = offset / 8
+		first_byte = offset / 8 + index
 		bitval_length = int(math.ceil(((offset % 8) + nbits) / 8.0))
 		result.append(parse_SB(
-			buffer[first_byte:][:bitval_length], 
+			bytes[first_byte:][:bitval_length], 
 			nbits, 
 			offset % 8))
 		

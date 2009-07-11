@@ -49,7 +49,6 @@ def parse_rect(file_obj, index):
 #  #######################
 #
 #
-#
 
 	
 def parse_SB(bytes, nbits, offset):

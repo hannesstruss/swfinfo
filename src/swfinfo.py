@@ -1,9 +1,34 @@
 # -*- coding: utf-8 -*-
 
+# This file is part of SWFInfo.
+# 
+# Copyright 2009 Hannes Struß <x@hannesstruss.de>
+# 
+# SWFInfo is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License.
+# 
+# SWFInfo is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with SWFInfo.  If not, see <http://www.gnu.org/licenses/>.
+
+
 from __future__ import with_statement
 
 import math
 import zlib
+
+RESULT_FIELDS = (
+	"Version",
+	"Compressed",
+	"Uncompressed Size",
+	"Compressed Size",
+	"Stage Dimensions",
+)
 
 def analyze(path):
 	result = {}
@@ -33,7 +58,6 @@ def parse_rect(bytes, index):
 	result = []
 
 	nbits = ord(bytes[index]) >> 3
-	print "nbits", nbits
 	rect_len = int(math.ceil((nbits * 4 + 5) / 8.0)) # number of bytes the rect needs, including nbits
 	
 	offset = 5
@@ -47,20 +71,7 @@ def parse_rect(bytes, index):
 		
 		offset += nbits
 	
-	print "pix", map(lambda x: x, result)
-	
 	return tuple(result)
-	
-#
-# !.......!.......!.......!.......
-#                         #######################
-#
-# NNNNN...
-# 00000111
-#
-# ...NNNNN
-# 11100000
-
 	
 def parse_SB(bytes, nbits, offset):
 	"""
@@ -79,14 +90,11 @@ def parse_SB(bytes, nbits, offset):
 	byte = ord(bytes[0])
 	mask = (1 << (8 - offset)) - 1
 	bits = (byte & mask) << (nbits - (8 - offset))
-	print "bits", bin(bits).rjust(20)
 	result |= bits
 	
 	# bytes in the middle
 	for x, byte in enumerate(map(ord, bytes[1:-1])):
-		#bits = byte << (nbits - (8 * (x+1)) - offset)
 		bits = byte << (x+1)*8 - padding_right 
-		print "bit2", bin(bits).rjust(20)
 		result |= bits
 	
 	# last byte, may be only partly significant
@@ -94,7 +102,6 @@ def parse_SB(bytes, nbits, offset):
 	bits = byte >> padding_right
 	result |= bits 
 
-	print "rslt",bin(result).rjust(20)
 	return result
 		
 def parse_int(bytes, little_endian=True):
@@ -112,4 +119,9 @@ def parse_int(bytes, little_endian=True):
 	
 
 if __name__ == '__main__':
-	print analyze("/home/hannes/Desktop/FUUU.swf")
+	path = "/home/hannes/Desktop/FUUU.swf"
+	result = analyze(path)
+	print "SWFInfo 0.1, Hannes Struß <x@hannesstruss.de>"
+	print path
+	for key in RESULT_FIELDS:
+		print "%s: %s" % (key, result[key])

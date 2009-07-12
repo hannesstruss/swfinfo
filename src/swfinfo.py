@@ -30,6 +30,7 @@ RESULT_FIELDS = (
 	"Uncompressed Size",
 	"Compressed Size",
 	"Stage Dimensions",
+	"Frame Rate",
 )
 
 def analyze(path):
@@ -41,14 +42,25 @@ def analyze(path):
 		
 		compressed_content = file_obj.read()
 		uncompressed_content = zlib.decompress(compressed_content)
-
+		
 		result["Compressed"] = "yes" if compressed else "no"
 		result["Version"] = ord(buffer[3])
 		result["Uncompressed Size"] = parse_int(buffer[4:8])
 		result["Compressed Size"] = len(compressed_content) + 8
 		result["Stage Dimensions"] = map(lambda x: x/20.0, parse_rect(uncompressed_content, 0)[1::2])
+		result["Frame Rate"] = 0
 		
 		return result
+
+def parse_rect_nbits(byte):
+	return ord(byte) >> 3
+
+def count_rect_bytes(nbits):
+	"""
+	count the number of bytes a RECT needs, including nbits
+	@param nbits: bit-width of the RECT's fields
+	"""
+	return int(math.ceil((nbits * 4 + 5) / 8.0))
 
 def parse_rect(bytes, index):
 	"""
@@ -59,8 +71,8 @@ def parse_rect(bytes, index):
 	"""
 	result = []
 
-	nbits = ord(bytes[index]) >> 3
-	rect_len = int(math.ceil((nbits * 4 + 5) / 8.0)) # number of bytes the rect needs, including nbits
+	nbits = parse_rect_nbits(bytes[index])
+	rect_len = count_rect_bytes(nbits)
 	
 	offset = 5
 	for n in xrange(4): # read 4 bitvalues

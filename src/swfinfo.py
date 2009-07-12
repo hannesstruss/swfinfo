@@ -25,6 +25,7 @@ import math
 import zlib
 
 RESULT_FIELDS = (
+	"File",
 	"Version",
 	"Compressed",
 	"Uncompressed Size",
@@ -40,14 +41,16 @@ def analyze(path):
 		
 		compressed = buffer[0] == "C"
 		
-		compressed_content = file_obj.read()
-		uncompressed_content = zlib.decompress(compressed_content)
+		content = file_obj.read()
+		result["Compressed Size"] = len(content) + 8
+		if compressed:
+			content = zlib.decompress(content)
 		
+		result["File"] = path
 		result["Compressed"] = "yes" if compressed else "no"
 		result["Version"] = ord(buffer[3])
 		result["Uncompressed Size"] = parse_int(buffer[4:8])
-		result["Compressed Size"] = len(compressed_content) + 8
-		result["Stage Dimensions"] = map(lambda x: x/20.0, parse_rect(uncompressed_content, 0)[1::2])
+		result["Stage Dimensions"] = map(lambda x: x/20.0, parse_rect(content, 0)[1::2])
 		result["Frame Rate"] = 0
 		
 		return result
@@ -131,6 +134,12 @@ def parse_int(bytes, little_endian=True):
 	
 	return result
 	
+def format(result):
+	buffer = "SWFInfo 0.1, Hannes Struß <x@hannesstruss.de>\n"
+	for key in RESULT_FIELDS:
+		buffer += "%s: %s\n" % (key, result[key])
+	return buffer
+	
 
 if __name__ == '__main__':
 	try:
@@ -139,7 +148,4 @@ if __name__ == '__main__':
 		sys.stderr.write("You must specify a path!\nUsage: ./swfinfo.py /path/to/file.swf\n")
 		sys.exit(1)
 	result = analyze(path)
-	print "SWFInfo 0.1, Hannes Struß <x@hannesstruss.de>"
-	print path
-	for key in RESULT_FIELDS:
-		print "%s: %s" % (key, result[key])
+	print format(result)
